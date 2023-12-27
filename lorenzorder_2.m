@@ -1,0 +1,55 @@
+% Define the system of ODEs
+tic;
+f = @(t, y) [10*(y(2)-y(1)); y(1)*(28-y(3))-y(2); y(1)*y(2)-3*y(3)]; % Lorenz system
+dfdy = @(t, y) [-10, 10, 0; 28-y(3), -1, -y(1); y(2), y(1), -3]; % Jacobian matrix
+
+N = 100000;
+t0 = 0;
+T = 10;
+y0 = [5; 5; 5]; % Initial conditions
+h = (T-t0)/N;
+tol = 1e-8;
+
+y = imp_midpt(f, dfdy, t0, T, y0, h, tol, N);
+
+% 3D Plotting
+figure;
+plot3(y(1,:), y(2,:), y(3,:));
+xlabel('x1');
+ylabel('x2');
+zlabel('x3');
+title('3D Plot of the Lorenz System Trajectories');
+grid on;
+
+% Save the figure
+filename = 'LorenzSystemTrajectories_ImpMidpt.png';
+saveas(gcf, filename);
+
+T_GM2=toc;
+
+% Implicit Midpoint Method
+function y = imp_midpt(f, dfdy, t0, T, y0, h, tol, N)
+    t = t0:h:T;
+    n = length(t);
+    y = zeros(3, n);
+    y(:, 1) = y0;
+    
+    for k = 1:n-1
+        g = @(z) z - y(:, k) - h*f(t(k) + 0.5*h, 0.5*(z + y(:, k)));
+        gp = @(z) eye(3) - h*dfdy(t(k) + 0.5*h, 0.5*(z + y(:, k)));
+        y(:, k+1) = newton(g, gp, y(:, k), tol, N);
+    end
+end
+
+% Newton's Method for implicit solution
+function sol = newton(f, fp, x0, tol, N)
+    for i = 1:N
+        delta = fp(x0) \ f(x0);
+        x0 = x0 - delta;
+        
+        if norm(delta) < tol
+            break;
+        end
+    end
+    sol = x0;
+end
